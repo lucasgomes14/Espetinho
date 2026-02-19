@@ -3,7 +3,7 @@ spring:
     name: espetinho
 
   datasource:
-    url: jdbc:postgresql://neondb_owner:npg_paW3VHeDjG6q@ep-withered-pond-ai5cbkvv-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require
+    url: jdbc:postgresql://ep-withered-pond-ai5cbkvv-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require
     username: neondb_owner
     password: npg_paW3VHeDjG6q
     driver-class-name: org.postgresql.Driver
@@ -11,3 +11,4 @@ spring:
     hibernate:
       ddl-auto: create
     show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
