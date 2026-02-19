@@ -1,5 +1,6 @@
 package com.espetinho_da_paula.espetinho.domain;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,6 +9,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity(name = "tb_command")
 @Setter
@@ -20,7 +23,7 @@ public class Command {
     private Long id;
 
     @Column(nullable = false)
-    private int table;
+    private int tableNumber;
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
@@ -29,4 +32,8 @@ public class Command {
     private BigDecimal totalValue;
 
     private LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "command", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<OrderItem> orderItems = new ArrayList<>();
 }
