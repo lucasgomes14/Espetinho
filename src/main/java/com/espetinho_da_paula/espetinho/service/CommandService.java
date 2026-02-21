@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,30 +50,28 @@ public class CommandService {
         Command command = findById(id);
         Product product = productService.findById(dto.productId());
 
-        if (command.getOrderItems()
-                .stream()
-                .noneMatch(item -> Objects.equals(item.getProduct().getId(), product.getId()))) {
-                    OrderItem orderItem = orderItemService.buildItem(dto);
-                    orderItem.setCommand(command);
-
-                    command.getOrderItems().add(orderItem);
-
-                    BigDecimal subTotal = orderItem.getUnitPrice().multiply(BigDecimal.valueOf(dto.quantity()));
-
-                    command.setTotalValue(command.getTotalValue().add(subTotal));
-
-                    return commandRepository.save(command);
-                }
-
-        command.getOrderItems()
+        Optional<OrderItem> existingItemOpt = command.getOrderItems()
                 .stream()
                 .filter(item -> Objects.equals(item.getProduct().getId(), product.getId()))
-                .forEach(orderItem -> {
-                    orderItem.setQuantity(orderItem.getQuantity() + dto.quantity());
-                });
+                .findFirst();
 
-        BigDecimal subTotal = product.getPrice().multiply(BigDecimal.valueOf(dto.quantity()));
+        if (existingItemOpt.isEmpty()) {
+            OrderItem newItem = orderItemService.buildItem(dto);
+            newItem.setCommand(command);
 
+            command.getOrderItems().add(newItem);
+
+            BigDecimal subTotal = newItem.getUnitPrice().multiply(BigDecimal.valueOf(dto.quantity()));
+            command.setTotalValue(command.getTotalValue().add(subTotal));
+
+            return commandRepository.save(command);
+        }
+
+        OrderItem existingItem = existingItemOpt.get();
+
+        existingItem.setQuantity(existingItem.getQuantity() + dto.quantity());
+
+        BigDecimal subTotal = existingItem.getUnitPrice().multiply(BigDecimal.valueOf(dto.quantity()));
         command.setTotalValue(command.getTotalValue().add(subTotal));
 
         return commandRepository.save(command);
@@ -83,7 +82,6 @@ public class CommandService {
         Command command = findById(commandId);
 
         OrderItem orderItem = orderItemService.findById(orderItemId);
-        orderItemService.removeAllItems(orderItem);
 
         command.getOrderItems().remove(orderItem);
 
@@ -105,7 +103,7 @@ public class CommandService {
                 .filter(item -> Objects.equals(item.getId(), itemId) && item.getQuantity() > 0)
                 .forEach(quantity -> quantity.setQuantity(quantity.getQuantity() - 1));
 
-        command.getOrderItems().stream().filter(item -> item.getQuantity() == 0).forEach(order -> command.getOrderItems().remove(order));
+        command.getOrderItems().removeIf(item -> item.getQuantity() == 0);
 
         command.setTotalValue(command.getTotalValue().subtract(orderItem.getUnitPrice()));
 
